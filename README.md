@@ -6,11 +6,11 @@
 
 | 图片压缩 | 批量压缩 | 格式转换 |
 |:---:|:---:|:---:|
-| ![图片压缩](docs/screenshots/image-compressor.png) | ![批量压缩](docs/screenshots/batch-image-compressor.png) | ![格式转换](docs/screenshots/image-converter.png) |
+| ![图片压缩](docs/screenshots/图片压缩.png) | ![批量压缩](docs/screenshots/批量压缩.png) | ![格式转换](docs/screenshots/格式转换.png) |
 
 | 视频压缩 | 批量视频 | 视频转动图 | 批量转动图 |
 |:---:|:---:|:---:|:---:|
-| ![视频压缩](docs/screenshots/video-compressor.png) | ![批量视频](docs/screenshots/batch-video-compressor.png) | ![视频转动图](docs/screenshots/video-to-animated.png) | ![批量转动图](docs/screenshots/batch-animated.png) |
+| ![视频压缩](docs/screenshots/视频压缩.png) | ![批量视频](docs/screenshots/批量视频.png) | ![视频转动图](docs/screenshots/视频转动图.png) | ![批量转动图](docs/screenshots/批量转动图.png) |
 
 ## 功能
 
