@@ -2,6 +2,16 @@
 
 一款原生 macOS 媒体工具套件，使用 SwiftUI 构建。
 
+## 截图
+
+| 图片压缩 | 批量压缩 | 格式转换 |
+|:---:|:---:|:---:|
+| ![图片压缩](docs/screenshots/image-compressor.png) | ![批量压缩](docs/screenshots/batch-image-compressor.png) | ![格式转换](docs/screenshots/image-converter.png) |
+
+| 视频压缩 | 批量视频 | 视频转动图 | 批量转动图 |
+|:---:|:---:|:---:|:---:|
+| ![视频压缩](docs/screenshots/video-compressor.png) | ![批量视频](docs/screenshots/batch-video-compressor.png) | ![视频转动图](docs/screenshots/video-to-animated.png) | ![批量转动图](docs/screenshots/batch-animated.png) |
+
 ## 功能
 
 | 功能 | 说明 |
