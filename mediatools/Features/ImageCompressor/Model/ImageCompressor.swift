@@ -6,6 +6,8 @@
 //
 
 import AppKit
+import CoreGraphics
+import ImageIO
 
 // MARK: - Config
 
@@ -59,21 +61,21 @@ struct ImageCompressionResult {
 // MARK: - Compressor
 
 final class ImageCompressor {
-    static let shared = ImageCompressor()
+    nonisolated(unsafe) static let shared = ImageCompressor()
     private init() {}
 
-    func compress(_ image: NSImage, config: ImageCompressionConfig = .defaultConfig) -> ImageCompressionResult? {
-        guard let originalData = image.jpegData(compressionQuality: config.initialQuality) else {
-            return nil
-        }
+    nonisolated func compress(_ image: NSImage, config: ImageCompressionConfig = .defaultConfig) -> ImageCompressionResult? {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
 
-        let originalSize = originalData.count
+        let originalSize = jpegDataSize(cgImage: cgImage, quality: config.initialQuality)
+        guard originalSize > 0 else { return nil }
 
         if originalSize <= config.maxFileSize {
+            guard let data = jpegData(cgImage: cgImage, quality: config.initialQuality) else { return nil }
             return ImageCompressionResult(
-                data: originalData,
+                data: data,
                 originalSize: originalSize,
-                compressedSize: originalSize,
+                compressedSize: data.count,
                 scale: 1.0,
                 quality: config.initialQuality
             )
@@ -81,16 +83,15 @@ final class ImageCompressor {
 
         // Phase 1: scale down dimensions
         var currentScale: CGFloat = 1.0
-        var scaledImage = image
+        var scaledCGImage = cgImage
         let quality = config.initialQuality
 
         while currentScale > config.minScale {
             currentScale *= config.scaleFactor
+            guard let resized = cgImage.resized(toScale: currentScale) else { break }
+            scaledCGImage = resized
 
-            let resized = image.resized(toScale: currentScale)
-            scaledImage = resized
-
-            if let data = resized.jpegData(compressionQuality: quality),
+            if let data = jpegData(cgImage: resized, quality: quality),
                data.count <= config.maxFileSize {
                 return ImageCompressionResult(
                     data: data,
@@ -107,7 +108,7 @@ final class ImageCompressor {
         while currentQuality > config.minQuality {
             currentQuality -= config.qualityStep
 
-            if let data = scaledImage.jpegData(compressionQuality: currentQuality),
+            if let data = jpegData(cgImage: scaledCGImage, quality: currentQuality),
                data.count <= config.maxFileSize {
                 return ImageCompressionResult(
                     data: data,
@@ -120,7 +121,7 @@ final class ImageCompressor {
         }
 
         // Fallback: return minimum quality result
-        if let finalData = scaledImage.jpegData(compressionQuality: config.minQuality) {
+        if let finalData = jpegData(cgImage: scaledCGImage, quality: config.minQuality) {
             return ImageCompressionResult(
                 data: finalData,
                 originalSize: originalSize,
@@ -133,34 +134,49 @@ final class ImageCompressor {
         return nil
     }
 
-    func compress(_ image: NSImage, maxFileSize: Int) -> Data? {
+    nonisolated func compress(_ image: NSImage, maxFileSize: Int) -> Data? {
         compress(image, config: ImageCompressionConfig(maxFileSize: maxFileSize))?.data
+    }
+
+    // MARK: - Private helpers
+
+    private func jpegData(cgImage: CGImage, quality: CGFloat) -> Data? {
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(data, "public.jpeg" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, cgImage, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        guard CGImageDestinationFinalize(dest) else { return nil }
+        return data as Data
+    }
+
+    private func jpegDataSize(cgImage: CGImage, quality: CGFloat) -> Int {
+        jpegData(cgImage: cgImage, quality: quality)?.count ?? 0
     }
 }
 
-// MARK: - NSImage helpers
+// MARK: - CGImage helpers
 
-private extension NSImage {
-    func jpegData(compressionQuality: CGFloat) -> Data? {
-        guard let tiff = tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
-        return bitmap.representation(
-            using: .jpeg,
-            properties: [.compressionFactor: compressionQuality]
-        )
-    }
+private extension CGImage {
+    /// 使用 vImage 高质量缩放，不产生屏幕渲染缓冲区
+    func resized(toScale scale: CGFloat) -> CGImage? {
+        let newWidth  = Int(CGFloat(width)  * scale)
+        let newHeight = Int(CGFloat(height) * scale)
+        guard newWidth > 0, newHeight > 0 else { return nil }
 
-    func resized(toScale scale: CGFloat) -> NSImage {
-        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
-        let result = NSImage(size: newSize)
-        result.lockFocus()
-        defer { result.unlockFocus() }
-        NSGraphicsContext.current?.imageInterpolation = .high
-        draw(in: CGRect(origin: .zero, size: newSize),
-             from: CGRect(origin: .zero, size: size),
-             operation: .copy,
-             fraction: 1.0)
-        return result
+        let colorSpace = colorSpace ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+        guard let context = CGContext(
+            data: nil,
+            width: newWidth,
+            height: newHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        ) else { return nil }
+
+        context.interpolationQuality = .high
+        context.draw(self, in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+        return context.makeImage()
     }
 }
 

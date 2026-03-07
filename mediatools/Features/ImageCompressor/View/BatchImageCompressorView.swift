@@ -135,10 +135,16 @@ private struct BatchItemRow: View {
                 Image(nsImage: img)
                     .resizable()
                     .scaledToFill()
-            } else {
-                Image(nsImage: item.image)
+            } else if let thumb = item.thumbnail {
+                Image(nsImage: thumb)
                     .resizable()
                     .scaledToFill()
+            } else {
+                Color.secondary.opacity(0.2)
+                    .overlay {
+                        Image(systemName: "photo")
+                            .foregroundStyle(.secondary)
+                    }
             }
         }
         .frame(width: 40, height: 40)

@@ -19,25 +19,41 @@ enum BatchItemStatus: Equatable {
 // MARK: - BatchItem
 
 @Observable final class BatchItem: Identifiable {
-    let id = UUID()
-    let filename: String
-    let sourceURL: URL?
-    let image: NSImage
-    var status: BatchItemStatus = .idle
-    var result: ImageCompressionResult?
+    let id         = UUID()
+    let filename:    String
+    let sourceURL:   URL
+    var status:      BatchItemStatus = .idle
+    var result:      ImageCompressionResult?
     let originalSize: Int
 
-    init(filename: String, sourceURL: URL?, image: NSImage) {
-        self.filename = filename
-        self.sourceURL = sourceURL
-        self.image = image
-        if let url = sourceURL,
-           let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+    // 仅用于行缩略图，尺寸很小，内存占用可忽略
+    var thumbnail: NSImage?
+
+    init(url: URL) {
+        self.filename  = url.lastPathComponent
+        self.sourceURL = url
+        if let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
            let size = values.fileSize {
             self.originalSize = size
         } else {
-            self.originalSize = image.tiffRepresentation?.count ?? 0
+            self.originalSize = 0
         }
+    }
+
+    /// 异步加载小缩略图（最大 80×80 pt），不保留完整图像
+    nonisolated func loadThumbnail() async {
+        let url = sourceURL
+        let thumb = await Task.detached(priority: .utility) { () -> NSImage? in
+            guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+            let options: [CFString: Any] = [
+                kCGImageSourceThumbnailMaxPixelSize: 80,
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true
+            ]
+            guard let cgThumb = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) else { return nil }
+            return NSImage(cgImage: cgThumb, size: .zero)
+        }.value
+        await MainActor.run { self.thumbnail = thumb }
     }
 }
 
@@ -114,7 +130,14 @@ enum BatchItemStatus: Equatable {
             for item in pending {
                 item.status = .compressing
                 await Task.yield()
-                let result = ImageCompressor.shared.compress(item.image, config: config)
+
+                let result: ImageCompressionResult? = await Task.detached(priority: .utility) {
+                    autoreleasepool {
+                        guard let image = NSImage(contentsOf: item.sourceURL) else { return nil }
+                        return ImageCompressor.shared.compress(image, config: config)
+                    }
+                }.value
+
                 item.result = result
                 item.status = result != nil ? .done : .failed
                 await Task.yield()
@@ -201,12 +224,12 @@ enum BatchItemStatus: Equatable {
     // MARK: - Private
 
     private func addFromURLs(_ urls: [URL]) {
-        let existingURLs = Set(items.compactMap { $0.sourceURL })
+        let existingURLs = Set(items.map { $0.sourceURL })
         for url in urls {
-            guard !existingURLs.contains(url),
-                  let image = NSImage(contentsOf: url) else { continue }
-            let item = BatchItem(filename: url.lastPathComponent, sourceURL: url, image: image)
+            guard !existingURLs.contains(url) else { continue }
+            let item = BatchItem(url: url)
             items.append(item)
+            Task { await item.loadThumbnail() }
         }
     }
 }
