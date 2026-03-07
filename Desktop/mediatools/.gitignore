@@ -56,3 +56,6 @@ fastlane/test_output
 # Misc
 *.log
 
+# Large binaries (distribute via GitHub Release)
+mediatools/ffmpeg
+

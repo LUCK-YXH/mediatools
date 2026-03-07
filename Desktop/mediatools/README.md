@@ -30,6 +30,11 @@
 git clone https://github.com/LUCK-YXH/mediatools.git
 cd mediatools
 
+# 下载 ffmpeg 并放入项目目录
+# 从 Releases 页面下载：https://github.com/LUCK-YXH/mediatools/releases
+# 下载后执行：
+chmod +x mediatools/ffmpeg
+
 # 解析 SPM 依赖
 xcodebuild -resolvePackageDependencies -project mediatools.xcodeproj
 
