@@ -8,6 +8,7 @@ enum Tool: String, CaseIterable, Identifiable {
     case batchVideoCompressor = "批量视频"
     case videoToGif           = "视频转动图"
     case batchVideoToAnimated = "批量转动图"
+    case twoImageAnimator     = "两图动画"
 
     var id: String { rawValue }
     var icon: String {
@@ -19,6 +20,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .batchVideoCompressor: return "film.stack"
         case .videoToGif:           return "play.rectangle.on.rectangle"
         case .batchVideoToAnimated: return "play.rectangle.on.rectangle.fill"
+        case .twoImageAnimator:     return "photo.on.rectangle.angled"
         }
     }
 }

@@ -33,6 +33,8 @@ struct ContentView: View {
                 VideoToGifView()
             case .batchVideoToAnimated:
                 BatchAnimatedView()
+            case .twoImageAnimator:
+                TwoImageAnimatorView()
             case nil:
                 Text("请选择工具").foregroundStyle(.secondary)
             }

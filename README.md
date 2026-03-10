@@ -12,6 +12,10 @@
 |:---:|:---:|:---:|:---:|
 | ![视频压缩](docs/screenshots/视频压缩.png) | ![批量视频](docs/screenshots/批量视频.png) | ![视频转动图](docs/screenshots/视频转动图.png) | ![批量转动图](docs/screenshots/批量转动图.png) |
 
+| 两图转动画 |
+|:---:|
+| ![两图转动画](docs/screenshots/两图转动画.png) |
+
 ## 功能
 
 | 功能 | 说明 |
@@ -23,6 +27,7 @@
 | 批量视频 | 批量视频压缩 |
 | 视频转动图 | 将视频片段转为 GIF / WebP / APNG |
 | 批量转动图 | 批量将视频转为动图 |
+| 两图转动画 | 两张图片生成 Before-After 对比动图，支持多种过渡效果和分割线样式 |
 
 ## 系统要求
 
@@ -67,7 +72,8 @@ mediatools/
     ├── ImageCompressor/         # 图片压缩
     ├── ImageConverter/          # 格式转换
     ├── VideoCompressor/         # 视频压缩
-    └── VideoToAnimated/         # 视频转动图
+    ├── VideoToAnimated/         # 视频转动图
+    └── TwoImageAnimator/       # 两图转动画
 ```
 
 ## 架构
